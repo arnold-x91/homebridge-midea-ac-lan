@@ -26,7 +26,7 @@
     "homebridge-plugin"
   ],
   "dependencies": {
-    "node-mideahvac": "^0.2.2"
+    "node-mideahvac": "^0.2.3"
   },
   "devDependencies": {
     "@types/node": "^16.10.9",
