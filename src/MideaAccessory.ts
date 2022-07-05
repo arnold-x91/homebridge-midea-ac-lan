@@ -21,8 +21,8 @@ export class MideaAccessory {
 
   private ac: AC;
   private isActive = 0;
-  private currentTemp = 0;
-  private targetTemp = 10;
+  private currentTemp = 20;
+  private targetTemp = 20;
   private state = 0;
 
   constructor(
@@ -67,8 +67,8 @@ export class MideaAccessory {
       .onGet(this.getActive.bind(this))
       .onSet(this.setActive.bind(this));
 
-    //this.service.getCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState)
-    //  .onGet(this.getCurrentHeaterCoolerState.bind(this));
+    this.service.getCharacteristic(this.platform.Characteristic.CurrentHeaterCoolerState)
+      .onGet(this.getCurrentHeaterCoolerState.bind(this));
 
     this.service.getCharacteristic(this.platform.Characteristic.TargetHeaterCoolerState)
       .onGet(this.getTargetHeaterCoolerState.bind(this))
@@ -88,7 +88,7 @@ export class MideaAccessory {
 
   async updateStatus(){
     try{
-      const res = await this.ac.getStatus();
+      const res = await this.ac.getStatus(3);
       this.updateValues(res);
 
       this.platform.log.debug('result received');
@@ -141,7 +141,7 @@ export class MideaAccessory {
       powerOn: powerOn,
     };
 
-    const res = await this.ac.setStatus(options);
+    const res = await this.ac.setStatus(options, 3);
     this.isActive = Number(res.powerOn);
     this.platform.log.debug('Triggered SET Active: ', powerOn);
   }
@@ -150,8 +150,22 @@ export class MideaAccessory {
    * Handle requests to get the current value of the "Current Heater-Cooler State" characteristic
    */
   async getCurrentHeaterCoolerState(): Promise<CharacteristicValue> {
+    let currentValue: number;
+
+    if(this.isActive === 0) {
+      currentValue = this.platform.Characteristic.CurrentHeaterCoolerState.INACTIVE;
+    } else if (this.state === this.platform.Characteristic.TargetHeaterCoolerState.COOL ) {
+      currentValue = this.platform.Characteristic.CurrentHeaterCoolerState.COOLING;
+    } else if (this.state === this.platform.Characteristic.TargetHeaterCoolerState.HEAT ) {
+      currentValue = this.platform.Characteristic.CurrentHeaterCoolerState.COOLING;
+    } else if (this.currentTemp > this.targetTemp) {
+      currentValue = this.platform.Characteristic.CurrentHeaterCoolerState.COOLING;
+    } else {
+      currentValue = this.platform.Characteristic.CurrentHeaterCoolerState.HEATING;
+    }
+
     this.platform.log.debug('Triggered GET CurrentHeaterCoolerState: ', this.state);
-    return this.state;
+    return currentValue;
   }
 
 
@@ -182,7 +196,7 @@ export class MideaAccessory {
     };
 
     this.state = value as number;
-    await this.ac.setStatus(options);
+    await this.ac.setStatus(options, 3);
 
     this.platform.log.debug('Triggered SET TargetHeaterCoolerState:', value);
   }
@@ -215,7 +229,7 @@ export class MideaAccessory {
       temperatureSetpoint: this.targetTemp,
     };
 
-    this.ac.setStatus(options);
+    this.ac.setStatus(options, 3);
   }
 
   /**
@@ -238,6 +252,6 @@ export class MideaAccessory {
       temperatureSetpoint: this.targetTemp,
     };
 
-    this.ac.setStatus(options);
+    this.ac.setStatus(options, 3);
   }
 }

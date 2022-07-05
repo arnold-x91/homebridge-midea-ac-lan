@@ -3,7 +3,7 @@ declare module 'node-mideahvac' {
 
     export interface AC {
         getStatus(retry?: number): Promise<Status>;
-        setStatus(options: SetStatusOptions): Promise<Status>;
+        setStatus(options: SetStatusOptions, retry?: number): Promise<Status>;
     }
 
     export interface CreateApplianceOptions {
